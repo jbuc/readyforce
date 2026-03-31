@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html class="light scroll-smooth" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>READYFORCE - STL Firefighter Prep Utility</title>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;900&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap" rel="stylesheet"/>
+    <!-- Load a single Material Symbols font with the FILL axis range (0..1) to support both outlined and filled states -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0" rel="stylesheet" />
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: "#f5f0e8",
+                        primary: "#ffcc00",
+                        secondary: "#e63b2e",
+                        tertiary: "#0055ff",
+                        dark: "#1a1a1a",
+                        light: "#ffffff",
+                        surface: "#eee9e0",
+                    },
+                    fontFamily: {
+                        headline: ["Space Grotesk", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                    },
+                    boxShadow: {
+                        'brutal': '4px 4px 0px 0px #1a1a1a',
+                        'brutal-hover': '2px 2px 0px 0px #1a1a1a',
+                        'brutal-lg': '8px 8px 0px 0px #1a1a1a',
+                        'brutal-red': '8px 8px 0px 0px #e63b2e',
+                        'brutal-blue': '8px 8px 0px 0px #0055ff',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #f5f0e8; color: #1a1a1a; }
+        
+        /* Fixed Icon Font Declarations */
+        .material-symbols-outlined, .material-symbols-filled { 
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-filled { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        
+        /* Brutalist Scrollbar */
+        ::-webkit-scrollbar { width: 12px; }
+        ::-webkit-scrollbar-track { background: #f5f0e8; border-left: 4px solid #1a1a1a; }
+        ::-webkit-scrollbar-thumb { background: #1a1a1a; }
+        ::-webkit-scrollbar-thumb:hover { background: #e63b2e; }
+
+        /* Custom Checkbox */
+        .brutal-checkbox {
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #1a1a1a;
+            background-color: #fff;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.1s ease;
+        }
+        .brutal-checkbox:checked {
+            background-color: #e63b2e;
+        }
+        .brutal-checkbox:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 18px;
+            font-weight: 900;
+            top: -2px;
+            left: 3px;
+        }
+        
+        /* Dialog Backdrop */
+        dialog::backdrop {
+            background: rgba(26, 26, 26, 0.8);
+            backdrop-filter: blur(4px);
+        }
+
+        /* Accordion transition */
+        .accordion-content {
+            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out, padding 0.3s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .accordion-content.expanded {
+            max-height: 500px;
+            opacity: 1;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+    </style>
+</head>
+<body class="font-body min-h-screen flex flex-col selection:bg-primary selection:text-dark">
+
+    <!-- Chosen Palette: Bauhaus/Neo-Brutalist. Parchment background (#f5f0e8), High-contrast Deep Charcoal (#1a1a1a), Safety Yellow (#ffcc00), Fire Engine Red (#e63b2e), and Royal Blue (#0055ff). -->
+    <!-- Application Structure Plan: Dashboard layout with 3 core utilitarian sections: ROADMAP, PHYSICAL, and INTERVIEW. Uses brutalist UI cards and native dialogs to compartmentalize St. Louis County specific hiring data. Interactive timeline and local storage CPAT tracker provide active utility. -->
+    <!-- Visualization & Content Choices: 
+         1. Timeline: 3-column brutalist card grid with expandable vertical timeline. 
+         2. CPAT Protocols: JavaScript-driven interactive checklist bound to local storage for tracking Readiness %.
+         3. Interview & Vetting: Asymmetrical bento grid grouping mock board accordions and modal triggers for strict disqualifier lists. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. Material Symbols used exclusively. -->
+
+    <!-- TopNavBar -->
+    <nav class="bg-background border-b-4 border-dark shadow-brutal flex justify-between items-center w-full px-6 py-4 sticky top-0 z-50">
+        <div class="flex items-center gap-4">
+            <button id="mobile-menu-btn" class="md:hidden material-symbols-outlined text-3xl active:translate-y-1 transition-transform">menu</button>
+            <div class="text-2xl md:text-3xl font-black text-dark italic font-headline uppercase tracking-tighter flex items-center gap-2">
+                <span class="material-symbols-filled text-primary text-3xl" style="text-shadow: 2px 2px 0 #1a1a1a;">local_fire_department</span>
+                READYFORCE
+            </div>
+        </div>
+        <div class="hidden md:flex items-center gap-8 font-headline font-bold uppercase tracking-tighter text-sm lg:text-base">
+            <a class="nav-top-link text-primary underline decoration-4 underline-offset-8 transition-colors duration-100" href="#roadmap" data-target="roadmap">Roadmap</a>
+            <a class="nav-top-link text-dark hover:bg-dark hover:text-primary transition-colors duration-100 px-2 py-1" href="#physical" data-target="physical">Physical Prep</a>
+            <a class="nav-top-link text-dark hover:bg-dark hover:text-primary transition-colors duration-100 px-2 py-1" href="#interview" data-target="interview">Interview & Vetting</a>
+        </div>
+        <div class="flex items-center gap-4">
+            <button onclick="document.getElementById('checklist-modal').showModal()" class="bg-dark text-white font-headline font-bold uppercase text-xs px-4 py-2 hover:bg-primary hover:text-dark border-2 border-dark transition-colors shadow-brutal-hover active:translate-y-0.5 active:translate-x-0.5 active:shadow-none flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg">download</span>
+                Master PDF
+            </button>
+        </div>
+    </nav>
+
+    <div class="flex flex-1 relative">
+        <!-- SideNavBar (Desktop) / Mobile Menu -->
+        <aside id="sidebar" class="fixed md:sticky top-[76px] left-0 h-[calc(100vh-76px)] w-64 bg-background border-r-4 border-dark font-headline font-bold uppercase overflow-y-auto transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-40 shadow-2xl md:shadow-none">
+            <div class="p-6 border-b-4 border-dark bg-primary">
+                <div class="text-xl font-black text-dark">STL FIRE PREP</div>
+                <div class="text-xs opacity-80 tracking-widest text-dark font-body mt-1">St. Louis County Depts</div>
+            </div>
+            <div class="flex flex-col py-4">
+                <a class="nav-side-link bg-primary text-dark border-2 border-dark m-2 p-3 flex items-center gap-3 transition-all duration-75 shadow-brutal-hover active:translate-x-0.5 active:translate-y-0.5 active:shadow-none" href="#roadmap" data-target="roadmap">
+                    <span class="material-symbols-outlined">map</span>
+                    <span>Roadmap</span>
+                </a>
+                <a class="nav-side-link text-dark p-3 m-2 flex items-center gap-3 hover:bg-secondary hover:text-white border-2 border-transparent transition-all duration-75" href="#physical" data-target="physical">
+                    <span class="material-symbols-outlined">fitness_center</span>
+                    <span>Physical CPAT</span>
+                </a>
+                <a class="nav-side-link text-dark p-3 m-2 flex items-center gap-3 hover:bg-tertiary hover:text-white border-2 border-transparent transition-all duration-75" href="#interview" data-target="interview">
+                    <span class="material-symbols-outlined">forum</span>
+                    <span>Vetting & Boards</span>
+                </a>
+            </div>
+            
+            <div class="mt-auto p-6 border-t-4 border-dark bg-surface">
+                <div class="text-xs font-black uppercase mb-2">Completion</div>
+                <div class="w-full bg-background border-2 border-dark h-4">
+                    <div id="overall-progress" class="bg-primary h-full w-0 transition-all duration-500 border-r-2 border-dark"></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6 md:p-10 lg:p-14 space-y-24 max-w-[1400px] mx-auto overflow-hidden">
+            
+            <!-- Section 1: The Master Plan -->
+            <section class="space-y-8 scroll-mt-24" id="roadmap">
+                <div class="border-l-8 border-dark pl-5 md:pl-6 py-1 flex justify-between items-start flex-col md:flex-row gap-4">
+                    <div>
+                        <h1 class="text-5xl md:text-7xl lg:text-8xl font-headline font-black uppercase leading-none tracking-tighter">Roadmap</h1>
+                        <p class="text-lg md:text-xl font-headline font-bold text-secondary mt-2 tracking-wide">STL COUNTY MASTER PLAN</p>
+                    </div>
+                </div>
+                
+                <p class="font-body text-dark/80 max-w-3xl text-lg mb-8 border-l-4 border-primary pl-4 bg-surface p-4">
+                    St. Louis County fire districts are highly competitive. You are competing against candidates who already hold degrees and licenses. This utility outlines the rigid sequence of certifications required.
+                </p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-0 border-4 border-dark bg-dark">
+                    <div class="bg-surface p-6 md:p-8 border-b-4 lg:border-b-0 lg:border-r-4 border-dark relative group transition-colors hover:bg-white">
+                        <span class="text-5xl font-black mb-4 block text-dark/20 absolute top-4 right-4">01</span>
+                        <h3 class="text-2xl font-black uppercase mb-4 font-headline pr-12 relative z-10">Education & Med</h3>
+                        <p class="font-body mb-6 text-sm relative z-10">Complete EMT-B at STLCC/SWIC. <strong>Paramedic License</strong> is highly preferred and acts as the "golden ticket" for 90% of STL districts.</p>
+                        <div class="bg-background p-3 border-2 border-dark text-xs font-black uppercase tracking-wider inline-block shadow-[2px_2px_0px_0px_#1a1a1a]">
+                            STATUS: REQUIRED
+                        </div>
+                    </div>
+                    
+                    <div class="bg-surface p-6 md:p-8 border-b-4 lg:border-b-0 lg:border-r-4 border-dark relative group transition-colors hover:bg-white">
+                        <span class="text-5xl font-black mb-4 block text-dark/20 absolute top-4 right-4">02</span>
+                        <h3 class="text-2xl font-black uppercase mb-4 font-headline pr-12 relative z-10">The Academy</h3>
+                        <p class="font-body mb-6 text-sm relative z-10">St. Louis County Fire Academy (12-14 weeks). Self-sponsor to stand out, or get hired as a Paramedic first and have the department sponsor your Fire I & II.</p>
+                        <div class="bg-background p-3 border-2 border-dark text-xs font-black uppercase tracking-wider inline-block shadow-[2px_2px_0px_0px_#1a1a1a]">
+                            STATUS: CORE REQ
+                        </div>
+                    </div>
+                    
+                    <div class="bg-surface p-6 md:p-8 relative group transition-colors hover:bg-white">
+                        <span class="text-5xl font-black mb-4 block text-dark/20 absolute top-4 right-4">03</span>
+                        <h3 class="text-2xl font-black uppercase mb-4 font-headline pr-12 relative z-10">Application</h3>
+                        <p class="font-body mb-6 text-sm relative z-10">Civil service written exams, CPAT verification, background packet, psychological evaluation, and final Chief's oral boards.</p>
+                        <div class="bg-primary p-3 border-2 border-dark text-xs font-black uppercase tracking-wider inline-block shadow-[2px_2px_0px_0px_#1a1a1a]">
+                            STATUS: THE GAUNTLET
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Timeline Reveal -->
+                <div class="mt-8 border-4 border-dark bg-white">
+                    <button id="timeline-toggle" class="w-full bg-background hover:bg-primary transition-colors p-6 flex justify-between items-center font-headline font-black uppercase text-xl border-b-4 border-transparent text-left group">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-3xl">route</span>
+                            Zero-To-Hero Timeline
+                        </div>
+                        <span id="timeline-icon" class="material-symbols-outlined text-3xl transition-transform group-hover:scale-110">expand_more</span>
+                    </button>
+                    
+                    <div id="timeline-content" class="hidden p-6 md:p-10 border-t-4 border-dark bg-surface-container-low">
+                        <div class="space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-1 before:bg-dark">
+                            
+                            <!-- Phase 1 -->
+                            <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
+                                <div class="flex items-center justify-center w-12 h-12 rounded-none border-4 border-dark bg-primary text-dark font-black shadow-brutal shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 text-xl font-headline">Y1</div>
+                                <div class="w-[calc(100%-4rem)] md:w-[calc(50%-3rem)] bg-white p-6 border-4 border-dark shadow-brutal">
+                                    <div class="text-primary font-black text-xs tracking-widest uppercase mb-2 bg-dark inline-block px-2 py-1">Months 1-12</div>
+                                    <h4 class="font-black text-2xl uppercase font-headline mb-2">The Foundation</h4>
+                                    <ul class="text-sm font-body space-y-2 list-disc list-inside opacity-90">
+                                        <li>Enroll in EMT-Basic (1 semester).</li>
+                                        <li>Pass NREMT cognitive/psychomotor exams.</li>
+                                        <li>Start HIIT and CPAT specific training.</li>
+                                        <li>Maintain a completely clean record.</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Phase 2 -->
+                            <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
+                                <div class="flex items-center justify-center w-12 h-12 rounded-none border-4 border-dark bg-white text-dark font-black shadow-brutal shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 text-xl font-headline">Y2</div>
+                                <div class="w-[calc(100%-4rem)] md:w-[calc(50%-3rem)] bg-white p-6 border-4 border-dark shadow-brutal">
+                                    <div class="text-white font-black text-xs tracking-widest uppercase mb-2 bg-secondary inline-block px-2 py-1">Months 12-24</div>
+                                    <h4 class="font-black text-2xl uppercase font-headline mb-2">The Golden Ticket</h4>
+                                    <ul class="text-sm font-body space-y-2 list-disc list-inside opacity-90">
+                                        <li>Enroll in a 12-18 month Paramedic program.</li>
+                                        <li>Work EMT-B on an ambulance (e.g., Abbott) for experience.</li>
+                                        <li>Take and pass the CPAT locally.</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Phase 3 -->
+                            <div class="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
+                                <div class="flex items-center justify-center w-12 h-12 rounded-none border-4 border-dark bg-dark text-primary font-black shadow-brutal shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 text-xl font-headline">Y3</div>
+                                <div class="w-[calc(100%-4rem)] md:w-[calc(50%-3rem)] bg-white p-6 border-4 border-dark shadow-brutal">
+                                    <div class="text-white font-black text-xs tracking-widest uppercase mb-2 bg-tertiary inline-block px-2 py-1">Months 24+</div>
+                                    <h4 class="font-black text-2xl uppercase font-headline mb-2">Execution</h4>
+                                    <ul class="text-sm font-body space-y-2 list-disc list-inside opacity-90">
+                                        <li>Pass NREMT Paramedic Exam.</li>
+                                        <li>Apply to all hiring St. Louis County districts.</li>
+                                        <li>Crush Oral Boards. District sponsors your Fire Academy.</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 2: Physical Prep (CPAT) -->
+            <section class="space-y-8 scroll-mt-24" id="physical">
+                <div class="border-l-8 border-secondary pl-5 md:pl-6 py-1 flex justify-between items-start">
+                    <div>
+                        <h2 class="text-5xl md:text-7xl lg:text-8xl font-headline font-black uppercase leading-none tracking-tighter">Physical</h2>
+                        <p class="text-lg md:text-xl font-headline font-bold text-secondary mt-2 tracking-wide">CPAT PROTOCOLS</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mt-8">
+                    <!-- Interactive Events List -->
+                    <div class="bg-white border-4 border-dark p-6 md:p-8 shadow-brutal-red">
+                        <div class="flex justify-between items-end border-b-4 border-dark pb-4 mb-6">
+                            <h3 class="text-2xl md:text-3xl font-black uppercase font-headline">Event Readiness Tracker</h3>
+                            <span class="font-black text-secondary bg-red-100 px-3 py-1 border-2 border-secondary font-headline uppercase text-sm whitespace-nowrap">&lt; 10m 20s Limit</span>
+                        </div>
+                        
+                        <div class="mb-4 bg-background border-2 border-dark h-6 w-full relative">
+                            <div id="cpat-progress" class="bg-secondary h-full w-0 transition-all duration-300 border-r-2 border-dark"></div>
+                            <span id="cpat-progress-text" class="absolute inset-0 flex items-center justify-center text-xs font-black uppercase text-dark mix-blend-difference z-10">0% READY</span>
+                        </div>
+
+                        <form id="cpat-form" class="space-y-3 font-bold uppercase text-xs md:text-sm font-headline tracking-wide">
+                            <!-- Items generated by JS to keep state clean -->
+                        </form>
+                    </div>
+                    
+                    <!-- Training Box -->
+                    <div class="space-y-6 flex flex-col justify-between">
+                        <div class="bg-dark text-white p-8 border-4 border-dark relative overflow-hidden h-full flex flex-col justify-center">
+                            <span class="material-symbols-filled absolute -right-10 -top-10 text-[200px] opacity-5 transform rotate-12 pointer-events-none">fitness_center</span>
+                            
+                            <h3 class="text-3xl font-black uppercase font-headline mb-4 relative z-10 flex items-center gap-3">
+                                <span class="material-symbols-outlined text-4xl text-primary">analytics</span>
+                                Training Logistics
+                            </h3>
+                            <p class="font-body mb-8 text-surface/80 text-sm md:text-base relative z-10">
+                                The St. Louis County Fire Academy hosts official CPAT testing. You must possess a valid card (usually issued within the last 12 months) just to submit a job application.
+                            </p>
+                            <button onclick="alert('Downloading CPAT Training Protocol PDF...')" class="w-full bg-secondary text-white border-4 border-dark hover:border-white py-4 font-headline font-black uppercase text-lg tracking-wider hover:bg-red-700 transition-colors flex items-center justify-center gap-3 relative z-10 shadow-brutal-hover active:translate-y-1 active:translate-x-1 active:shadow-none">
+                                <span class="material-symbols-outlined">picture_as_pdf</span>
+                                Download Log PDF
+                            </button>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <a class="bg-white border-4 border-dark p-4 font-headline font-black uppercase text-center hover:bg-primary transition-colors flex flex-col items-center justify-center gap-2 shadow-brutal-hover active:translate-y-1 active:translate-x-1 active:shadow-none" href="https://stlouisco.com/Law-and-Public-Safety/Fire-Academy" target="_blank">
+                                <span class="material-symbols-outlined text-3xl">location_on</span>
+                                <span class="text-sm mt-1">STL Academy Dates</span>
+                            </a>
+                            <a class="bg-white border-4 border-dark p-4 font-headline font-black uppercase text-center hover:bg-primary transition-colors flex flex-col items-center justify-center gap-2 shadow-brutal-hover active:translate-y-1 active:translate-x-1 active:shadow-none" href="#">
+                                <span class="material-symbols-outlined text-3xl">play_circle</span>
+                                <span class="text-sm mt-1">Form Videos</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 3: Interview Lab & Vetting -->
+            <section class="space-y-8 scroll-mt-24 mb-12" id="interview">
+                <div class="border-l-8 border-tertiary pl-5 md:pl-6 py-1">
+                    <h2 class="text-5xl md:text-7xl lg:text-8xl font-headline font-black uppercase leading-none tracking-tighter">Vetting</h2>
+                    <p class="text-lg md:text-xl font-headline font-bold text-tertiary mt-2 tracking-wide">APTITUDE & BACKGROUND LAB</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 mt-8">
+                    <!-- Resource Cards -->
+                    <div class="col-span-1 md:col-span-2 bg-background border-4 border-dark p-6 md:p-8 flex flex-col shadow-brutal-blue relative overflow-hidden group">
+                        <div class="relative z-10 mb-6">
+                            <h3 class="text-3xl md:text-4xl font-black uppercase font-headline mb-4 italic text-dark flex items-center justify-between">
+                                Mock Boards
+                                <span class="material-symbols-outlined text-tertiary text-4xl hidden sm:block">mic</span>
+                            </h3>
+                            <p class="font-body text-base md:text-lg text-dark/80 font-medium">
+                                Practice answering using the STAR method (Situation, Task, Action, Result).
+                            </p>
+                        </div>
+                        
+                        <!-- Interactive Accordion Question Bank -->
+                        <div class="space-y-3 mt-auto relative z-10" id="question-bank">
+                            <!-- Question 1 -->
+                            <div class="border-4 border-dark bg-white">
+                                <button class="accordion-btn w-full p-4 flex justify-between items-center text-left hover:bg-tertiary hover:text-white transition-colors">
+                                    <span class="font-black font-headline uppercase text-sm md:text-base">Why do you want to work for this specific district?</span>
+                                    <span class="material-symbols-outlined">add</span>
+                                </button>
+                                <div class="accordion-content bg-surface px-4 font-body text-sm border-t-2 border-dark">
+                                    <p><strong>Wrong Answer:</strong> "I just want to help people and fight fire."</p>
+                                    <p class="mt-2"><strong>Right Answer:</strong> Mention specific research. "I know Mehlville runs a high volume of EMS calls, and my background as a Paramedic aligns perfectly with your mission to provide top-tier pre-hospital care to South County..."</p>
+                                </div>
+                            </div>
+                            <!-- Question 2 -->
+                            <div class="border-4 border-dark bg-white">
+                                <button class="accordion-btn w-full p-4 flex justify-between items-center text-left hover:bg-tertiary hover:text-white transition-colors">
+                                    <span class="font-black font-headline uppercase text-sm md:text-base">Tell us about a time you made a mistake under pressure.</span>
+                                    <span class="material-symbols-outlined">add</span>
+                                </button>
+                                <div class="accordion-content bg-surface px-4 font-body text-sm border-t-2 border-dark">
+                                    <p><strong>Goal:</strong> Prove ownership and ability to learn. Use STAR.</p>
+                                    <p class="mt-2">"During a mass casualty incident on my ambulance, I initially failed to triage properly (Situation). I needed to tag 5 patients (Task). I got tunnel vision on the first patient. A senior medic corrected me (Action). I owned the mistake immediately, stepped back, and we cleared the scene. Now, I always take 10 seconds to read a scene before engaging (Result)."</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Psych Exam Block -->
+                    <div class="col-span-1 bg-dark text-white p-6 border-4 border-dark flex flex-col items-center justify-center text-center shadow-[4px_4px_0px_0px_rgba(26,26,26,0.3)] hover:scale-[1.02] transition-transform cursor-pointer">
+                        <span class="material-symbols-filled text-6xl mb-4 text-primary">psychology</span>
+                        <h4 class="font-black uppercase font-headline text-2xl tracking-tighter mb-2">Psych</h4>
+                        <p class="text-xs text-surface/70 font-body">Aptitude testing and rigorous psychological evaluations.</p>
+                    </div>
+
+                    <!-- Disqualifiers Modal Trigger -->
+                    <div onclick="document.getElementById('disqualifier-modal').showModal()" class="col-span-1 bg-secondary text-white p-6 border-4 border-dark flex flex-col items-center justify-center text-center shadow-[4px_4px_0px_0px_rgba(26,26,26,0.3)] hover:bg-red-700 transition-colors cursor-pointer relative group">
+                        <span class="absolute top-2 right-2 material-symbols-outlined animate-pulse text-white">warning</span>
+                        <span class="material-symbols-outlined text-6xl mb-4 text-white">policy</span>
+                        <h4 class="font-black uppercase font-headline text-lg mb-2">Disqualifiers</h4>
+                        <p class="text-xs text-red-100 font-body font-bold underline mt-2">CLICK TO VIEW STRICT RULES</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pt-4">
+                    <div class="border-4 border-dark p-6 bg-white hover:bg-dark hover:text-white transition-colors group shadow-brutal-hover">
+                        <h5 class="text-xl font-black uppercase font-headline mb-2 flex justify-between items-center">
+                            The Background Packet
+                            <span class="material-symbols-outlined mt-1 block">search_check</span>
+                        </h5>
+                        <p class="text-sm font-body text-dark/80 group-hover:text-white/80 transition-colors">
+                            The most common failure point. Investigators will interview ex-employers, neighbors, and check your credit. Lying or omitting a past ticket or firing during the background packet will disqualify you immediately for lack of integrity.
+                        </p>
+                    </div>
+                    
+                    <div class="border-4 border-dark p-6 bg-white hover:bg-tertiary hover:text-white transition-colors group shadow-brutal-hover">
+                        <h5 class="text-xl font-black uppercase font-headline mb-2 flex justify-between items-center">
+                            District Profiles
+                            <span class="material-symbols-outlined mt-1 block">domain</span>
+                        </h5>
+                        <p class="text-sm font-body text-dark/80 group-hover:text-white/80 transition-colors">
+                            Do not treat all districts the same. Monarch runs differently than Pattonville. Know their specific mission statements, apparatus types, and call volumes before you walk into the oral board.
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full py-8 px-6 mt-auto flex flex-col md:flex-row justify-between items-center gap-6 bg-dark text-background border-t-8 border-primary font-body text-sm font-medium tracking-widest uppercase z-10 relative">
+        <div class="flex flex-col md:flex-row items-center gap-2 md:gap-6">
+            <span class="text-primary font-black font-headline text-lg italic flex items-center gap-2">
+                <span class="material-symbols-filled text-xl">local_fire_department</span>
+                READYFORCE UTILITY
+            </span>
+            <span class="text-surface/50 text-xs text-center md:text-left">©2024 READYFORCE UTILITY - STL DIVISION</span>
+        </div>
+        <div class="flex gap-6 md:gap-8 font-bold">
+            <a class="text-surface/60 hover:text-primary transition-colors" href="#">Terms</a>
+            <a class="text-surface/60 hover:text-primary transition-colors" href="#">Privacy</a>
+            <a class="text-primary hover:text-white transition-colors" href="#">Resources</a>
+        </div>
+    </footer>
+
+    <!-- MODALS (Native HTML Dialogs) -->
+    
+    <!-- Checklist Modal -->
+    <dialog id="checklist-modal" class="p-0 border-4 border-dark bg-white w-11/12 max-w-2xl shadow-[16px_16px_0px_0px_#1a1a1a]">
+        <div class="bg-primary p-4 border-b-4 border-dark flex justify-between items-center">
+            <h2 class="font-headline font-black uppercase text-2xl text-dark tracking-tighter">Master PDF Download</h2>
+            <button onclick="document.getElementById('checklist-modal').close()" class="material-symbols-outlined text-dark hover:text-white transition-colors text-3xl">close</button>
+        </div>
+        <div class="p-8">
+            <p class="font-body text-dark mb-6">This generates a combined PDF containing the 3-Year Zero-to-Hero Roadmap, the CPAT Training Log, and the top 50 Oral Board Questions for St. Louis County.</p>
+            <div class="bg-surface p-4 border-2 border-dark mb-6 text-sm font-mono font-bold text-dark/70 text-center">
+                Generating File: READYFORCE_STL_MASTER_PREP.pdf
+            </div>
+            <button onclick="alert('Download started!'); document.getElementById('checklist-modal').close()" class="w-full bg-dark text-white py-4 font-headline font-black uppercase text-xl hover:bg-primary hover:text-dark border-4 border-dark transition-all shadow-brutal-hover active:translate-y-1 active:translate-x-1 active:shadow-none">
+                Confirm Download
+            </button>
+        </div>
+    </dialog>
+
+    <!-- Disqualifier Modal -->
+    <dialog id="disqualifier-modal" class="p-0 border-4 border-dark bg-white w-11/12 max-w-2xl shadow-[16px_16px_0px_0px_#e63b2e]">
+        <div class="bg-secondary p-4 border-b-4 border-dark flex justify-between items-center">
+            <h2 class="font-headline font-black uppercase text-2xl text-white tracking-tighter flex items-center gap-2">
+                <span class="material-symbols-outlined">warning</span> Strict Disqualifiers
+            </h2>
+            <button onclick="document.getElementById('disqualifier-modal').close()" class="material-symbols-outlined text-white hover:text-dark transition-colors text-3xl">close</button>
+        </div>
+        <div class="p-8 font-body text-dark">
+            <p class="mb-6 font-bold text-lg border-l-4 border-secondary pl-4">The background check is notoriously strict. The following items are generally instant, non-negotiable disqualifiers for St. Louis County departments.</p>
+            
+            <ul class="space-y-4">
+                <li class="flex items-start gap-3">
+                    <span class="material-symbols-filled text-secondary text-2xl mt-1">cancel</span>
+                    <div>
+                        <strong class="font-headline uppercase block text-lg">Felony Convictions</strong>
+                        <span class="text-sm opacity-80">Any felony conviction on your record.</span>
+                    </div>
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="material-symbols-filled text-secondary text-2xl mt-1">cancel</span>
+                    <div>
+                        <strong class="font-headline uppercase block text-lg">Recent Drug Use</strong>
+                        <span class="text-sm opacity-80">Recent use of illegal drugs. While marijuana laws are changing locally, it remains federally illegal and is often a disqualifier if used within 1-3 years prior to application.</span>
+                    </div>
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="material-symbols-filled text-secondary text-2xl mt-1">cancel</span>
+                    <div>
+                        <strong class="font-headline uppercase block text-lg">Poor Driving Record</strong>
+                        <span class="text-sm opacity-80">DUI/DWI convictions within the last 3-5 years, or a currently suspended/revoked license. You will be driving a $1M fire truck.</span>
+                    </div>
+                </li>
+                <li class="flex items-start gap-3">
+                    <span class="material-symbols-filled text-secondary text-2xl mt-1">cancel</span>
+                    <div>
+                        <strong class="font-headline uppercase block text-lg">Domestic Violence</strong>
+                        <span class="text-sm opacity-80">Misdemeanor or felony domestic violence convictions (Lautenberg Amendment restricts carrying firearms, which sometimes overlaps with local paramedic/arson investigator policies).</span>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </dialog>
+
+    <!-- Interactive JS -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            /* --- 1. Navigation & Scroll Spy --- */
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const sidebar = document.getElementById('sidebar');
+            const sections = document.querySelectorAll('section');
+            const navTopLinks = document.querySelectorAll('.nav-top-link');
+            const navSideLinks = document.querySelectorAll('.nav-side-link');
+
+            mobileMenuBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+                mobileMenuBtn.innerText = sidebar.classList.contains('-translate-x-full') ? 'menu' : 'close';
+            });
+
+            navSideLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth < 768) {
+                        sidebar.classList.add('-translate-x-full');
+                        mobileMenuBtn.innerText = 'menu';
+                    }
+                });
+            });
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (scrollY >= (sectionTop - 120)) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navTopLinks.forEach(link => {
+                    link.classList.remove('text-primary', 'underline', 'decoration-4', 'underline-offset-8');
+                    link.classList.add('text-dark');
+                    if (link.dataset.target === current) {
+                        link.classList.remove('text-dark');
+                        link.classList.add('text-primary', 'underline', 'decoration-4', 'underline-offset-8');
+                    }
+                });
+
+                navSideLinks.forEach(link => {
+                    link.classList.remove('bg-primary', 'text-dark', 'shadow-brutal-hover', 'border-dark', 'active:translate-x-0.5', 'active:translate-y-0.5', 'active:shadow-none');
+                    link.classList.add('text-dark', 'border-transparent');
+                    
+                    if (link.dataset.target === 'physical' && link.dataset.target !== current) {
+                        link.classList.add('hover:bg-secondary', 'hover:text-white');
+                    } else if (link.dataset.target === 'interview' && link.dataset.target !== current) {
+                        link.classList.add('hover:bg-tertiary', 'hover:text-white');
+                    }
+
+                    if (link.dataset.target === current) {
+                        link.classList.remove('border-transparent', 'hover:bg-secondary', 'hover:bg-tertiary', 'hover:text-white');
+                        link.classList.add('bg-primary', 'text-dark', 'shadow-brutal-hover', 'border-dark', 'active:translate-x-0.5', 'active:translate-y-0.5', 'active:shadow-none');
+                    }
+                });
+            });
+
+            /* --- 2. Timeline Accordion --- */
+            const timelineToggle = document.getElementById('timeline-toggle');
+            const timelineContent = document.getElementById('timeline-content');
+            const timelineIcon = document.getElementById('timeline-icon');
+
+            timelineToggle.addEventListener('click', () => {
+                timelineContent.classList.toggle('hidden');
+                timelineIcon.classList.toggle('rotate-180');
+                if(!timelineContent.classList.contains('hidden')){
+                    timelineContent.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            });
+
+            /* --- 3. Interview Question Accordion --- */
+            const accordionBtns = document.querySelectorAll('.accordion-btn');
+            accordionBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const content = this.nextElementSibling;
+                    const icon = this.querySelector('.material-symbols-outlined');
+                    
+                    // Close all others
+                    document.querySelectorAll('.accordion-content').forEach(c => {
+                        if (c !== content) {
+                            c.classList.remove('expanded');
+                            c.previousElementSibling.querySelector('.material-symbols-outlined').innerText = 'add';
+                            c.previousElementSibling.classList.remove('bg-tertiary', 'text-white');
+                        }
+                    });
+
+                    // Toggle current
+                    content.classList.toggle('expanded');
+                    if (content.classList.contains('expanded')) {
+                        icon.innerText = 'remove';
+                        this.classList.add('bg-tertiary', 'text-white');
+                    } else {
+                        icon.innerText = 'add';
+                        this.classList.remove('bg-tertiary', 'text-white');
+                    }
+                });
+            });
+
+            /* --- 4. CPAT Functional Checklist w/ LocalStorage --- */
+            const cpatEvents = [
+                "Stair Climb (3m w/ 75lb vest)",
+                "Hose Drag & Advance",
+                "Equipment Carry (Chainsaws)",
+                "Ladder Raise & Extension",
+                "Forcible Entry (Sledgehammer)",
+                "Search (Crawling Maze)",
+                "Rescue (165lb Dummy Drag)",
+                "Ceiling Breach & Pull"
+            ];
+            
+            const form = document.getElementById('cpat-form');
+            const progressBar = document.getElementById('cpat-progress');
+            const progressText = document.getElementById('cpat-progress-text');
+            const overallProgress = document.getElementById('overall-progress');
+
+            // Load saved state
+            let savedState = JSON.parse(localStorage.getItem('readyforceCpatState')) || new Array(cpatEvents.length).fill(false);
+
+            function updateProgress() {
+                const checkedCount = savedState.filter(Boolean).length;
+                const percentage = Math.round((checkedCount / cpatEvents.length) * 100);
+                
+                progressBar.style.width = `${percentage}%`;
+                progressText.innerText = `${percentage}% READY`;
+                overallProgress.style.width = `${percentage}%`; // Update sidebar global metric
+
+                if(percentage === 100) {
+                    progressBar.classList.replace('bg-secondary', 'bg-primary');
+                } else {
+                    progressBar.classList.replace('bg-primary', 'bg-secondary');
+                }
+                
+                localStorage.setItem('readyforceCpatState', JSON.stringify(savedState));
+            }
+
+            // Generate HTML for checkboxes
+            cpatEvents.forEach((eventText, index) => {
+                const label = document.createElement('label');
+                label.className = "flex items-center gap-4 p-3 bg-surface border-2 border-dark hover:bg-white transition-colors cursor-pointer group";
+                
+                const numSpan = document.createElement('span');
+                numSpan.className = "bg-dark text-white px-2 py-1 min-w-[32px] text-center transition-colors";
+                numSpan.innerText = `0${index + 1}`;
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = "checkbox";
+                checkbox.className = "brutal-checkbox shrink-0";
+                checkbox.checked = savedState[index];
+                
+                const textSpan = document.createElement('span');
+                textSpan.className = "transition-colors " + (checkbox.checked ? "line-through opacity-50" : "");
+                textSpan.innerText = eventText;
+
+                // Event Listener for clicks
+                checkbox.addEventListener('change', (e) => {
+                    savedState[index] = e.target.checked;
+                    textSpan.className = "transition-colors " + (e.target.checked ? "line-through opacity-50" : "");
+                    if(e.target.checked) {
+                        numSpan.classList.replace('bg-dark', 'bg-secondary');
+                    } else {
+                        numSpan.classList.replace('bg-secondary', 'bg-dark');
+                    }
+                    updateProgress();
+                });
+
+                // Init color state
+                if(checkbox.checked) { numSpan.classList.replace('bg-dark', 'bg-secondary'); }
+
+                label.appendChild(numSpan);
+                label.appendChild(checkbox);
+                label.appendChild(textSpan);
+                form.appendChild(label);
+            });
+
+            // Initial progress calculation
+            updateProgress();
+        });
+    </script>
+</body>
+</html>
